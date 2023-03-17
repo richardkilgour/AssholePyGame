@@ -17,7 +17,6 @@ from AssholeUI.PyGameCard import PyGameCard
 from AssholeUI.PyGameMaster import PyGameMaster
 from AssholeUI.PyGamePlayer import PyGamePlayer
 
-from asshole.player.HumanPlayer import HumanPlayer
 from asshole.player.PlayerSimple import PlayerSimple
 from asshole.player.PlayerHolder import PlayerHolder
 from asshole.player.PlayerSplitter import PlayerSplitter
