@@ -37,6 +37,7 @@ class PyGameMaster(GameMaster):
         self.episode = None
         self.current_player = None
         self.active_players = None
+        self.positions = []
         self.width = width
         self.height = height
 
@@ -54,14 +55,14 @@ class PyGameMaster(GameMaster):
         self.notify_listeners("notify_played_out", player, len(self.positions))
         self.positions.append(player)
 
-    def update_game_state(self):
+    def play(self):
         # check for any action, and display the current playfield
         if not self.episode:
             # Create a new episode
             self.episode = Episode(self.players, self.positions, self.deck, self.listener_list)
 
         # Do this, but do not block = 1 tick
-        positions = self.episode.play()
+        self.positions = self.episode.play()
         if self.episode.state == State.INITIALISED:
             # Do an episode - We need 4 players and a deck of cards.
             pass
@@ -77,7 +78,7 @@ class PyGameMaster(GameMaster):
         elif self.episode.state == State.HAND_WON:
             pass
         elif self.episode.state == State.FINISHED:
-            pass
+            self.episode = None
 
         # Find the human current_player (if any)
         human_player_index = 0
@@ -129,6 +130,8 @@ class PyGameMaster(GameMaster):
                     pycard.setCardParams(newAngle=270, faceup=(i == 0))
                 pycard.rect.x = pos[0]
                 pycard.rect.y = pos[1]
+
+            # TODO: Render discarded cards
         return self.cards
 
     def keypress(self, key):
