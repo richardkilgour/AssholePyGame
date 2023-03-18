@@ -21,6 +21,12 @@ class PyGameCard(Sprite):
         self.border = border
         self.size = self.width, self.height
 
+        # Create an image of the card, and fill it with pips and shit
+        # This could also be an image loaded from the disk.
+        # image is the whole card, including the border.
+        # The image will contain img which is the card value, or maybe the back of the card
+        self.image = pygame.Surface(self.size)
+
         self.face_up = True
         self.highlighted = False
         self.angle = 0
@@ -38,12 +44,6 @@ class PyGameCard(Sprite):
             self.load_court_card_image()
         else:
             self.generate_pip_card_image()
-
-        # Create an image of the card, and fill it with pips and shit
-        # This could also be an image loaded from the disk.
-        # image is the whole card, including the border.
-        # The image will contain img which is the card value, or maybe the back of the card
-        self.image = pygame.Surface(self.size)
 
         # Fetch the rectangle object that has the dimensions of the image
         # Update the position of this object by setting the values of rect.x and rect.y
