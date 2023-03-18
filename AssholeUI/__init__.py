@@ -21,7 +21,6 @@ from asshole.player.PlayerSimple import PlayerSimple
 from asshole.player.PlayerHolder import PlayerHolder
 from asshole.player.PlayerSplitter import PlayerSplitter
 
-
 # TODO: read a configuration file
 config = yaml.safe_load(open("./config.yaml"))
 
@@ -55,31 +54,36 @@ if TEST_CARD_LAYOUT:
 gm = PyGameMaster(width, height)
 
 players = [config['player1'], config['player2'], config['player3'], config['player4'], ]
+# From now on, the human player will be in position 0. 1 is to the left, 2 is opposite and 3 is to the right
+p0 = players[-1]
+while players[0] != p0:
+    if players[0]['type'] == 'PyGamePlayer':
+        break
+    players.append(players.pop(0))
 
-for p in players:
+print(f'{players}')
+
+for i, p in enumerate(players):
     player_class = getattr(sys.modules[__name__], p['type'])
     gm.make_player(player_class, p['name'])
-    ui_sprites_list.add(PlayerNameLabel(p['name']))
     if p['type'] == 'PyGamePlayer':
         human_player = gm.players[-1]
-
-# Yuck - explicitly place them
-ui_sprites_list.sprites()[0].rect.x = width - 60
-ui_sprites_list.sprites()[0].rect.y = height // 3
-ui_sprites_list.sprites()[1].rect.x = width // 2
-ui_sprites_list.sprites()[1].rect.y = height - 60
-ui_sprites_list.sprites()[2].rect.x = 0
-ui_sprites_list.sprites()[2].rect.y = height // 3
-ui_sprites_list.sprites()[3].rect.x = width // 2
-ui_sprites_list.sprites()[3].rect.y = 0
+        assert i == 0
+    if i == 0:
+        # Yuck - explicitly place them
+        ui_sprites_list.add(PlayerNameLabel(p['name'],   width // 2, height - 60))
+    elif i == 1:
+        ui_sprites_list.add(PlayerNameLabel(p['name'],  0,  height // 3))
+    elif i == 2:
+        ui_sprites_list.add(PlayerNameLabel(p['name'], width // 2,  0))
+    elif i == 3:
+        ui_sprites_list.add(PlayerNameLabel(p['name'],  width - 60, height // 3))
 
 clock = pygame.time.Clock()
 running = True
 
-pass_button = PassButton()
+pass_button = PassButton(width // 2, height // 2)
 ui_sprites_list.add(pass_button)
-pass_button.rect.x = width // 2
-pass_button.rect.y = height // 2
 
 while running:
     for event in pygame.event.get():
@@ -104,9 +108,9 @@ while running:
                 gm.notify_mouseover(s, False)
 
     # increment the current game state, and render sprites
-    all_sprites_list = gm.update_game_state()
+    all_sprites_list = gm.play()
     # Add pass and quit buttons
-    for position, player in enumerate(gm.episode.positions):
+    for position, player in enumerate(gm.positions):
         # Find the nametag
         for tag in ui_sprites_list.sprites():
             if tag.text[-len(player.name):] == player.name:
@@ -119,5 +123,4 @@ while running:
     all_sprites_list.draw(screen)
     ui_sprites_list.draw(screen)
     pygame.display.flip()
-    # print(f'x', end='')
-    pygame.time.wait(60)
+    pygame.time.wait(1)
