@@ -82,15 +82,15 @@ class PyGameCard(Sprite):
 
     def setCardParams(self, highlighted = None, faceup = None, newAngle = None):
         changed = False
-        if highlighted and self.highlighted != highlighted:
+        if highlighted is not None and self.highlighted != highlighted:
             self.highlighted = highlighted
             changed = True
 
-        if faceup and self.face_up != faceup:
+        if faceup is not None  and self.face_up != faceup:
             self.face_up = faceup
             changed = True
 
-        if newAngle and self.angle != newAngle:
+        if newAngle is not None and self.angle != newAngle:
             self.angle_delta = newAngle - self.angle
             self.angle = newAngle
             changed = True
