@@ -1,5 +1,5 @@
 from asshole.cards.Meld import Meld
-from asshole.player.AbstractPlayer import AbstractPlayer
+from asshole.player.AbstractPlayer import AbstractPlayer, possible_plays
 from asshole.player.PlayerSimple import PlayerSimple
 
 
@@ -44,7 +44,7 @@ class PyGamePlayer(PlayerSimple):
             return Meld()
 
         # Check if it's valid
-        selection = self.possible_plays()
+        selection = possible_plays(self._hand, self.target_meld, self.name)
 
         # Last option is Pass, so ignore it
         for s in selection[:-1]:
@@ -52,6 +52,6 @@ class PyGamePlayer(PlayerSimple):
             if self.NextAction.get_index() == s.cards[-1].get_index():
                 self.NextAction = None
                 return s
-        print(f'INVALID CLICK')
+        print(f'INVALID CLICK; {self.NextAction} is not better than {self.target_meld}')
         self.NextAction = None
         return '␆'
