@@ -17,6 +17,7 @@ class PyGamePlayer(PlayerSimple):
         # If this is a card in the hand, play it
         if clicked_card == 'PASS':
             self.NextAction = 'PASS'
+        if self.NextAction == 'PASS':
             return
         if self.NextAction and self.NextAction.get_index() > clicked_card.get_index():
             # Only if it's higher than all the existing 'action' cards, replace them
