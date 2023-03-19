@@ -2,7 +2,7 @@ import pygame
 
 
 class PlayerNameLabel(pygame.sprite.Sprite):
-    def __init__(self, name, x_pos, y_pos):
+    def __init__(self, name, x_pos=0, y_pos=0):
         pygame.sprite.Sprite.__init__(self)
         self.x_pos = x_pos
         self.y_pos = y_pos
@@ -19,7 +19,6 @@ class PlayerNameLabel(pygame.sprite.Sprite):
         self.rect = self.image.get_rect()
         self.rect.x = self.x_pos
         self.rect.y = self.y_pos
-
 
 
 # TODO: Make a generic abstract button
