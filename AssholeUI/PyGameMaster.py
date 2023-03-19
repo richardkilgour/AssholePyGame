@@ -1,22 +1,14 @@
 #!/usr/bin/env python
 """
-Contains the Asshole game logic
-
-Wrapper around a generic Asshole GameMaster to make it asynchronous
-Has a primitive state machine that can change with a call to update_game_state, in the main game loop
+Creates and repeatedly calls an Asshole episode
+Holds all the card sprites and player playfields
+Processes UI actions
 """
-from random import shuffle
-
 # Only for making the list of Sprites
 import pygame
 from asshole.Episode import Episode, State
 from asshole.GameMaster import GameMaster
-from asshole.cards.PlayingCard import PlayingCard
-
 from AssholeUI import PyGameCard, PyGamePlayer
-
-# Remember the current state
-from enum import Enum
 
 
 def player_is_human(player):
@@ -32,8 +24,6 @@ class PyGameMaster(GameMaster):
         for i in range(0, self.deck_size):
             self.cards.add(PyGameCard(i))
 
-        # Do it after players added
-        self.player_labels = []
         self.episode = None
         self.current_player = None
         self.active_players = None
@@ -41,22 +31,8 @@ class PyGameMaster(GameMaster):
         self.width = width
         self.height = height
 
-    def make_player(self, player_type, name=None):
-        super().make_player(player_type, name)
-
-    # Stolen from Episode
-    def set_player_finished(self, player):
-        """
-        Someone just played out, so assign them a position,
-        Technically they are still 'in' and their meld counts
-        If the hands makes it back round, they will pass (and gloat)
-        """
-        player.set_position(len(self.positions))
-        self.notify_listeners("notify_played_out", player, len(self.positions))
-        self.positions.append(player)
-
-    def play(self):
-        # check for any action, and display the current playfield
+    def play(self, number_of_rounds=100, preset_hands=None):
+        # check for any action, and display the current play field
         if not self.episode:
             # Create a new episode
             self.episode = Episode(self.players, self.positions, self.deck, self.listener_list)
@@ -67,7 +43,8 @@ class PyGameMaster(GameMaster):
             # Do an episode - We need 4 players and a deck of cards.
             pass
         elif self.episode.state == State.DEALING:
-            pass
+            for c in self.cards:
+                c.setCardParams(faceup=False)
         elif self.episode.state == State.SWAPPING:
             pass
         elif self.episode.state == State.ROUND_STARTING:
@@ -87,28 +64,40 @@ class PyGameMaster(GameMaster):
                 human_player_index = i
                 break
 
-        # i 0 is human (or computer), then clockwise
+        # i = 0 is human (or computer), then clockwise
         for i in range(0, 4):
             # Current player is offset by the 'human' index
             # TODO: move human to first place? (locally)
-            player = self.players[(human_player_index + i) % 4]
+            player_index = (human_player_index + i) % 4
+            player = self.players[player_index]
 
+            if self.episode:
+                player_meld = self.episode.current_melds[player_index]
+            else:
+                player_meld = None
             # Render played cards
-            if player.last_played and player.last_played != '␆':
+            if player_meld is None:
+                # TODO: Put a label saying "Passed"
+                pass
+            elif player_meld == '␆':
+                # TODO: Put a label saying "Waiting"
+                pass
+            else:
                 # draw the played cards
-                for j, card in enumerate(player.last_played.cards):
-                    pycard = self.cards[card.get_index()]
+                for j, card in enumerate(player_meld.cards):
+                    pycard = self.cards.sprites()[card.get_index()]
+                    pycard.setCardParams(faceup=True)
                     if i == 0:
                         pos = (self.width // 2 + 40 * j, 2 * self.height // 3 - 120)
                     elif i == 1:
                         pos = (90, self.height // 3 + j * self.height // 12)
-                        pycard.setCardParams(newAngle=90, faceup=True)
+                        pycard.setCardParams(newAngle=90)
                     elif i == 2:
                         pos = (self.width // 2 + 40 * j, 120)
-                        pycard.setCardParams(newAngle=180, faceup=True)
+                        pycard.setCardParams(newAngle=180)
                     elif i == 3:
                         pos = (2 * self.width // 3 + 40, self.height // 3 + j * self.height // 12)
-                        pycard.setCardParams(newAngle=270, faceup=True)
+                        pycard.setCardParams(newAngle=270)
                     pycard.rect.x = pos[0]
                     pycard.rect.y = pos[1]
 
@@ -117,17 +106,19 @@ class PyGameMaster(GameMaster):
                 # index to the pycard
                 # It will draw itself, but needs some parameters
                 pycard = self.cards.sprites()[card.get_index()]
+                pycard.setCardParams(faceup=i == 0)
+
                 if i == 0:
                     pos = (120 + 40 * j, 2 * self.height // 3)
                 elif i == 1:
                     pos = (40, j * self.height // 24)
-                    pycard.setCardParams(newAngle=90, faceup=(i == 0))
+                    pycard.setCardParams(newAngle=90)
                 elif i == 2:
                     pos = (self.width // 3 + j * self.width // 45, 10)
-                    pycard.setCardParams(newAngle=180, faceup=(i == 0))
+                    pycard.setCardParams(newAngle=180)
                 elif i == 3:
                     pos = (self.width - 40, j * self.height // 24)
-                    pycard.setCardParams(newAngle=270, faceup=(i == 0))
+                    pycard.setCardParams(newAngle=270)
                 pycard.rect.x = pos[0]
                 pycard.rect.y = pos[1]
 
@@ -138,13 +129,13 @@ class PyGameMaster(GameMaster):
         pass
 
     def notify_click(self, card):
-        # If it's a current_player's card, queue it up for playing
-        if card in self.player_labels:
-            return
+        """Forward a clicked card to the human player (if any) to decide which to play"""
         for p in self.players:
             if player_is_human(p):
                 # Let the player decide which to take if multiple clicks
                 p.send_card_click(card)
 
-    def notify_mouseover(self, card, param):
-        card.setCardParams(highlighted=param)
+    def notify_mouseover(self, pycard, param):
+        for p in self.players:
+            if player_is_human(p) and pycard.card.get_index() in p.get_hand_indices():
+                pycard.setCardParams(highlighted=param)
