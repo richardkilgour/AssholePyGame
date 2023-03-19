@@ -35,7 +35,7 @@ actors = []
 turn_count = 0
 segment_count = 0
 
-all_sprites_list = pygame.sprite.Group()
+card_sprites_list = pygame.sprite.Group()
 ui_sprites_list = pygame.sprite.Group()
 
 TEST_CARD_LAYOUT = False
@@ -48,7 +48,7 @@ if TEST_CARD_LAYOUT:
         new_card = PyGameCard(i % 4, i // 4, pos)
         new_card.rect.x = pos[0]
         new_card.rect.y = pos[1]
-        all_sprites_list.add(new_card)
+        card_sprites_list.add(new_card)
 
 # PyGame will ceed control to the GM
 gm = PyGameMaster(width, height)
@@ -99,7 +99,7 @@ while running:
                     pygame.mouse.get_pos()) and event.type == pygame.MOUSEBUTTONDOWN:
                 human_player.send_card_click('PASS')
 
-        for s in all_sprites_list:
+        for s in card_sprites_list:
             if s.rect.collidepoint(pygame.mouse.get_pos()):
                 gm.notify_mouseover(s, True)
                 if event.type == pygame.MOUSEBUTTONDOWN:
@@ -108,7 +108,8 @@ while running:
                 gm.notify_mouseover(s, False)
 
     # increment the current game state, and render sprites
-    all_sprites_list = gm.play()
+    card_sprites_list, other_sprite_list = gm.play()
+
     # Add pass and quit buttons
     for position, player in enumerate(gm.positions):
         # Find the nametag
@@ -120,7 +121,8 @@ while running:
 
     # Update the display
     screen.fill(pygame.color.THECOLORS['white'])
-    all_sprites_list.draw(screen)
+    card_sprites_list.draw(screen)
+    other_sprite_list.draw(screen)
     ui_sprites_list.draw(screen)
     pygame.display.flip()
     pygame.time.wait(1)

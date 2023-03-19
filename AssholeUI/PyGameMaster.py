@@ -8,7 +8,7 @@ Processes UI actions
 import pygame
 from asshole.Episode import Episode, State
 from asshole.GameMaster import GameMaster
-from AssholeUI import PyGameCard, PyGamePlayer
+from AssholeUI import PyGameCard, PyGamePlayer, PlayerNameLabel
 
 
 def player_is_human(player):
@@ -30,6 +30,11 @@ class PyGameMaster(GameMaster):
         self.positions = []
         self.width = width
         self.height = height
+        self.player_status_labels = []
+
+    def make_player(self, player_type, name=None):
+        super().make_player(player_type, name)
+        self.player_status_labels.append(PlayerNameLabel(name))
 
     def play(self, number_of_rounds=100, preset_hands=None):
         # check for any action, and display the current play field
@@ -37,14 +42,13 @@ class PyGameMaster(GameMaster):
             # Create a new episode
             self.episode = Episode(self.players, self.positions, self.deck, self.listener_list)
 
-        # Do this, but do not block = 1 tick
         self.positions = self.episode.play()
         if self.episode.state == State.INITIALISED:
             # Do an episode - We need 4 players and a deck of cards.
             pass
         elif self.episode.state == State.DEALING:
             for c in self.cards:
-                c.setCardParams(faceup=False)
+                c.set_card_params(faceup=False)
         elif self.episode.state == State.SWAPPING:
             pass
         elif self.episode.state == State.ROUND_STARTING:
@@ -64,6 +68,9 @@ class PyGameMaster(GameMaster):
                 human_player_index = i
                 break
 
+        visible_cards = pygame.sprite.Group()
+        visible_others = pygame.sprite.Group()
+
         # i = 0 is human (or computer), then clockwise
         for i in range(0, 4):
             # Current player is offset by the 'human' index
@@ -75,29 +82,47 @@ class PyGameMaster(GameMaster):
                 player_meld = self.episode.current_melds[player_index]
             else:
                 player_meld = None
-            # Render played cards
+
+            # TODO: Really should not do this every time
+            if player_index == 0:
+                self.player_status_labels[player_index].rect.x = self.width // 2
+                self.player_status_labels[player_index].rect.y = 2 * self.height // 3 - 120
+            elif player_index == 1:
+                self.player_status_labels[player_index].rect.x = self.width // 3 - 40
+                self.player_status_labels[player_index].rect.y = self.height // 3
+            elif player_index == 2:
+                self.player_status_labels[player_index].rect.x = self.width // 2
+                self.player_status_labels[player_index].rect.y = 120
+            elif player_index == 3:
+                self.player_status_labels[player_index].rect.x = 2 * self.width // 3 + 40
+                self.player_status_labels[player_index].rect.y = self.height // 3
+
+            # Render played cards or labels
             if player_meld is None:
                 # TODO: Put a label saying "Passed"
-                pass
+                self.player_status_labels[i].set_text(f'{player.name} PASSED')
+                visible_others.add(self.player_status_labels[i])
             elif player_meld == '␆':
                 # TODO: Put a label saying "Waiting"
-                pass
+                self.player_status_labels[i].set_text(f'{player.name} WAITING')
+                visible_others.add(self.player_status_labels[i])
             else:
                 # draw the played cards
                 for j, card in enumerate(player_meld.cards):
                     pycard = self.cards.sprites()[card.get_index()]
-                    pycard.setCardParams(faceup=True)
+                    visible_cards.add(pycard)
+                    pycard.set_card_params(faceup=True)
                     if i == 0:
                         pos = (self.width // 2 + 40 * j, 2 * self.height // 3 - 120)
                     elif i == 1:
-                        pos = (90, self.height // 3 + j * self.height // 12)
-                        pycard.setCardParams(newAngle=90)
+                        pos = (self.width // 3 - 40, self.height // 3 + j * self.height // 12)
+                        pycard.set_card_params(newAngle=90)
                     elif i == 2:
                         pos = (self.width // 2 + 40 * j, 120)
-                        pycard.setCardParams(newAngle=180)
+                        pycard.set_card_params(newAngle=180)
                     elif i == 3:
                         pos = (2 * self.width // 3 + 40, self.height // 3 + j * self.height // 12)
-                        pycard.setCardParams(newAngle=270)
+                        pycard.set_card_params(newAngle=270)
                     pycard.rect.x = pos[0]
                     pycard.rect.y = pos[1]
 
@@ -106,36 +131,37 @@ class PyGameMaster(GameMaster):
                 # index to the pycard
                 # It will draw itself, but needs some parameters
                 pycard = self.cards.sprites()[card.get_index()]
-                pycard.setCardParams(faceup=i == 0)
+                pycard.set_card_params(faceup=i == 0)
+                visible_cards.add(pycard)
 
                 if i == 0:
                     pos = (120 + 40 * j, 2 * self.height // 3)
                 elif i == 1:
                     pos = (40, j * self.height // 24)
-                    pycard.setCardParams(newAngle=90)
+                    pycard.set_card_params(newAngle=90)
                 elif i == 2:
                     pos = (self.width // 3 + j * self.width // 45, 10)
-                    pycard.setCardParams(newAngle=180)
+                    pycard.set_card_params(newAngle=180)
                 elif i == 3:
                     pos = (self.width - 40, j * self.height // 24)
-                    pycard.setCardParams(newAngle=270)
+                    pycard.set_card_params(newAngle=270)
                 pycard.rect.x = pos[0]
                 pycard.rect.y = pos[1]
 
-            # TODO: Render discarded cards
-        return self.cards
+        return visible_cards, visible_others
+
 
     def keypress(self, key):
         pass
 
-    def notify_click(self, card):
+    def notify_click(self, pycard):
         """Forward a clicked card to the human player (if any) to decide which to play"""
         for p in self.players:
             if player_is_human(p):
                 # Let the player decide which to take if multiple clicks
-                p.send_card_click(card)
+                p.send_card_click(pycard)
 
     def notify_mouseover(self, pycard, param):
         for p in self.players:
             if player_is_human(p) and pycard.card.get_index() in p.get_hand_indices():
-                pycard.setCardParams(highlighted=param)
+                pycard.set_card_params(highlighted=param)
