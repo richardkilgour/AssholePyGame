@@ -4,6 +4,8 @@ Creates and repeatedly calls an Asshole episode
 Holds all the card sprites and player playfields
 Processes UI actions
 """
+import math
+
 # Only for making the list of Sprites
 import pygame
 from asshole.Episode import Episode, State
@@ -13,6 +15,10 @@ from AssholeUI import PyGameCard, PyGamePlayer, PlayerNameLabel
 
 def player_is_human(player):
     return isinstance(player, PyGamePlayer.PyGamePlayer)
+
+def find_pos(pos, dist, angle):
+    """Get a pos, a length and an angle, return the relative position"""
+    return pos[0] + math.sin(math.radians(angle)) * dist, pos[1] - math.cos(math.radians(angle)) * dist,
 
 
 class PyGameMaster(GameMaster):
@@ -138,16 +144,21 @@ class PyGameMaster(GameMaster):
                 pycard = self.cards.sprites()[card.get_index()]
                 pycard.set_card_params(faceup=i == 0)
                 visible_cards.add(pycard)
+                card_spread = 6
+                card_angle = i * 90 + (j - mid_card_index) * card_spread
                 # TODO: more elegant pos and angle to make a nice arc
+                pos = (0,0)
                 if i == 0:
-                    pos = (120 + 40 * j, 2 * self.height // 3)
+                    pos = (self.width // 2, self.height)
                 elif i == 1:
-                    pos = (40, j * self.height // 24)
+                    pos = (-50, self.height // 3)
                 elif i == 2:
-                    pos = (self.width // 3 + j * self.width // 45, 10)
+                    pos = (self.width // 2, -pycard.height-20)
                 elif i == 3:
-                    pos = (self.width - 40, j * self.height // 24)
-                pycard.set_card_params(newAngle= i * 90 - (j - mid_card_index) * 10)
+                    pos = (self.width, self.height // 3)
+                pos = find_pos(pos, 1.5 * pycard.height, card_angle)
+                pycard.set_card_params(newAngle = -card_angle)
+                # TODO: place by mid-point so hack above can be removed
                 pycard.rect.x = pos[0]
                 pycard.rect.y = pos[1]
 
