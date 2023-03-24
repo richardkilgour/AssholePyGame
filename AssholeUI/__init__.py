@@ -12,7 +12,7 @@ import pygame
 from asshole.player.AbstractPlayer import AbstractPlayer
 from pygame.locals import *
 # TODO: load dynamically using importlib
-from AssholeUI.GuiElements import PlayerNameLabel, PassButton
+from AssholeUI.GuiElements import PlayerNameLabel, PassButton, StatBox
 from AssholeUI.PyGameCard import PyGameCard
 from AssholeUI.PyGameMaster import PyGameMaster
 from AssholeUI.PyGamePlayer import PyGamePlayer
@@ -85,6 +85,9 @@ running = True
 pass_button = PassButton(width // 2, height // 2)
 ui_sprites_list.add(pass_button)
 last_mouse_pos = None
+
+stat_box = StatBox(width // 2, height // 2)
+ui_sprites_list.add(stat_box)
 
 while running:
 
