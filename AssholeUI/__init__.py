@@ -84,8 +84,12 @@ running = True
 
 pass_button = PassButton(width // 2, height // 2)
 ui_sprites_list.add(pass_button)
+last_mouse_pos = None
 
 while running:
+
+    mouse_is_over = False
+
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
             running = False
@@ -95,17 +99,25 @@ while running:
             gm.keypress(event.key)
         # where is the mouse
         for s in ui_sprites_list:
-            if s == pass_button and s.rect.collidepoint(
-                    pygame.mouse.get_pos()) and event.type == pygame.MOUSEBUTTONDOWN:
-                human_player.send_card_click('PASS')
+            if s == pass_button:
+                if s.rect.collidepoint(pygame.mouse.get_pos()):
+                    if event.type == pygame.MOUSEBUTTONDOWN:
+                        human_player.send_card_click('PASS')
+                    else:
+                        s.highlight(True)
+                else:
+                    s.highlight(False)
 
         for s in card_sprites_list:
             if s.rect.collidepoint(pygame.mouse.get_pos()):
-                gm.notify_mouseover(s, True)
+                last_mouse_pos = pygame.mouse.get_pos()
+                gm.notify_mouseover(s)
+                mouse_is_over = True
                 if event.type == pygame.MOUSEBUTTONDOWN:
                     gm.notify_click(s.card)
-            else:
-                gm.notify_mouseover(s, False)
+
+    if not mouse_is_over and last_mouse_pos != pygame.mouse.get_pos():
+        gm.notify_mouseover(None)
 
     # increment the current game state, and render sprites
     card_sprites_list, other_sprite_list = gm.play()

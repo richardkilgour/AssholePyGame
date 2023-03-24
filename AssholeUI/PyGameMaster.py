@@ -26,9 +26,9 @@ class PyGameMaster(GameMaster):
         super().__init__()
 
         # Sprites should be persistent, so init them here
-        self.cards = pygame.sprite.Group()
+        self.pycards = pygame.sprite.Group()
         for i in range(0, self.deck_size):
-            self.cards.add(PyGameCard(i))
+            self.pycards.add(PyGameCard(i))
 
         self.episode = None
         self.current_player = None
@@ -37,10 +37,16 @@ class PyGameMaster(GameMaster):
         self.width = width
         self.height = height
         self.player_status_labels = []
+        self.mouse_over = None
 
     def make_player(self, player_type, name=None):
         super().make_player(player_type, name)
         self.player_status_labels.append(PlayerNameLabel(name))
+
+    def get_pycard(self, c) -> PyGameCard:
+        for pc in self.pycards:
+            if pc.card.get_index() == c.get_index():
+                return pc
 
     def set_label_pos(self, label, index):
         # TODO: Really should not do this every time
@@ -68,7 +74,7 @@ class PyGameMaster(GameMaster):
             # Do an episode - We need 4 players and a deck of cards.
             pass
         elif self.episode.state == State.DEALING:
-            for c in self.cards:
+            for c in self.pycards:
                 c.set_card_params(faceup=False)
         elif self.episode.state == State.SWAPPING:
             pass
@@ -81,7 +87,7 @@ class PyGameMaster(GameMaster):
             pass
         elif self.episode.state == State.FINISHED:
             # Set highlight state of all cards to False
-            for c in self.cards:
+            for c in self.pycards:
                 c.set_card_params(highlighted=False)
             self.episode = None
 
@@ -91,6 +97,12 @@ class PyGameMaster(GameMaster):
             if player_is_human(player):
                 human_player_index = i
                 break
+
+        for pc in self.pycards:
+            pc.set_card_params(highlighted=False)
+        if self.mouse_over:
+            for c in self.mouse_over.cards:
+                self.get_pycard(c).set_card_params(highlighted=True)
 
         visible_cards = pygame.sprite.Group()
         visible_others = pygame.sprite.Group()
@@ -121,7 +133,7 @@ class PyGameMaster(GameMaster):
             else:
                 # draw the played cards
                 for j, card in enumerate(player_meld.cards):
-                    pycard = self.cards.sprites()[card.get_index()]
+                    pycard = self.pycards.sprites()[card.get_index()]
                     visible_cards.add(pycard)
                     pycard.set_card_params(faceup=True)
                     if i == 0:
@@ -141,7 +153,7 @@ class PyGameMaster(GameMaster):
             for j, card in enumerate(player._hand):
                 # index to the pycard
                 # It will draw itself, but needs some parameters
-                pycard = self.cards.sprites()[card.get_index()]
+                pycard = self.pycards.sprites()[card.get_index()]
                 pycard.set_card_params(faceup=i == 0)
                 visible_cards.add(pycard)
                 card_spread = 6
@@ -168,14 +180,31 @@ class PyGameMaster(GameMaster):
     def keypress(self, key):
         pass
 
-    def notify_click(self, pycard):
+    def notify_click(self, card):
         """Forward a clicked card to the human player (if any) to decide which to play"""
+        # Ignore it if it's not the currently selcted card
+        if self.mouse_over and self.mouse_over.cards[-1] == card:
+            human = self.get_human_player()
+            if human:
+                # Let the player decide which to take if multiple clicks
+                human.send_card_click(card)
+
+    def get_human_player(self) -> PyGamePlayer:
         for p in self.players:
             if player_is_human(p):
-                # Let the player decide which to take if multiple clicks
-                p.send_card_click(pycard)
+                return p
 
-    def notify_mouseover(self, pycard, param):
-        for p in self.players:
-            if player_is_human(p) and pycard.card.get_index() in p.get_hand_indices():
-                pycard.set_card_params(highlighted=param)
+    def notify_mouseover(self, pycard):
+        """Enact mouseover behaviour if """
+        if not pycard:
+            self.mouse_over = None
+        else:
+            human = self.get_human_player()
+            if not human:
+                # No human player
+                return
+            # Check if it's a valid play, and even then only if it's the best one
+            meld = human.get_meld(pycard.card)
+            if meld and meld.cards[-1] == pycard.card:
+                self.mouse_over = meld
+
