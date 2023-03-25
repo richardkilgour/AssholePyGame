@@ -86,7 +86,7 @@ pass_button = PassButton(width // 2, height // 2)
 ui_sprites_list.add(pass_button)
 last_mouse_pos = None
 
-stat_box = StatBox(width // 2, height // 2)
+stat_box = StatBox(0, height - 150)
 ui_sprites_list.add(stat_box)
 
 while running:

@@ -51,9 +51,9 @@ class button_label(pygame.sprite.Sprite):
 
 
 class StatBox(pygame.sprite.Sprite):
-    def __init__(self, x_pos=0, y_pos=0):
+    def __init__(self, x_pos=0, y_pos=0, width=250, height=150):
         pygame.sprite.Sprite.__init__(self)
-        self.image = pygame.Surface((250, 150))
+        self.image = pygame.Surface((width, height))
         self.image.fill(pygame.color.THECOLORS['aquamarine3'])
         self.x_pos = x_pos
         self.y_pos = y_pos
@@ -64,9 +64,11 @@ class StatBox(pygame.sprite.Sprite):
         self.total_games = 0
         self.king_run = 0
         self.ass_run = 0
-        self.font = pygame.font.SysFont("Arial", 34)
+        self.font = pygame.font.SysFont("Arial", 24)
         blit_text(self.image, f'Kingdoms: {self.kingdoms} Best run: {self.king_run}\nPrincipalities: {self.principalities}\nAss: {self.assholeocity}  Shitist run: {self.ass_run}\n: ', (0,0), self.font)
         self.rect = self.image.get_rect()
+        self.rect.x = self.x_pos
+        self.rect.y = self.y_pos
 
     def set_text(self, text):
         # todo:abstract for all the GUI elements
